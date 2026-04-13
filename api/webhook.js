@@ -2,7 +2,7 @@
  * Binance Breakout Scanner — Telegram Webhook (Vercel)
  *
  * Komutlar:
- *   /start  → Kaydol & yardım
+ *   /start  → Kaydol & yardım -test
  *   /stop   → Kaydı sil
  *   /15m    → 15 dakikalık tarama
  *   /1h     → 1 saatlik tarama
