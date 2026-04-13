@@ -104,17 +104,24 @@ async function tgSetTyping(chatId) {
 // ─── Binance API ─────────────────────────────────────────────────────────────
 
 async function fetchBinanceTickers() {
-  const res  = await fetch('https://api.binance.com/api/v3/ticker/24hr');
+  const res  = await fetch('https://api.binance.com/api/v3/ticker/24hr', {
+    headers: { 'User-Agent': 'Mozilla/5.0' },
+  });
   const data = await res.json();
   return data.filter(t => t.symbol.endsWith('USDT'));
 }
 
 async function fetchExchangeInfo() {
-  const res  = await fetch('https://api.binance.com/api/v3/exchangeInfo');
-  const data = await res.json();
-  const map  = {};
-  for (const s of data.symbols) map[s.symbol] = s.status;
-  return map;
+  try {
+    const res  = await fetch('https://api.binance.com/api/v3/exchangeInfo', {
+      headers: { 'User-Agent': 'Mozilla/5.0' },
+    });
+    const data = await res.json();
+    if (!Array.isArray(data.symbols)) return null; // engellendiyse null dön
+    const map = {};
+    for (const s of data.symbols) map[s.symbol] = s.status;
+    return map;
+  } catch { return null; }
 }
 
 async function fetchMonitoringList() {
@@ -136,7 +143,7 @@ async function fetchMonitoringList() {
 
 async function fetchKlines(symbol, interval, limit) {
   const url = `https://api.binance.com/api/v3/klines?symbol=${symbol}&interval=${interval}&limit=${limit}`;
-  const res = await fetch(url);
+  const res = await fetch(url, { headers: { 'User-Agent': 'Mozilla/5.0' } });
   if (!res.ok) throw new Error(`HTTP ${res.status}`);
   const data = await res.json();
   return data.map(k => ({
@@ -173,7 +180,8 @@ async function buildSymbolList() {
   const filtered = tickers.filter(t => {
     const base = t.symbol.replace('USDT', '');
     if (STABLECOINS.has(base))                         return false;
-    if (statusMap[t.symbol] !== 'TRADING')             return false;
+    // statusMap null ise (Binance engelledi) status kontrolü atla
+    if (statusMap && statusMap[t.symbol] !== 'TRADING') return false;
     if (monitoring.has(t.symbol))                      return false;
     if (parseFloat(t.quoteVolume) < MIN_24H_VOL_USDT) return false;
     return true;
