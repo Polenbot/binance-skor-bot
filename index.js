@@ -123,8 +123,10 @@ async function fetchBinanceTickers() {
   const res  = await fetch('https://api.binance.com/api/v3/ticker/24hr', {
     headers: { 'User-Agent': 'Mozilla/5.0' },
   });
-  const data = await res.json();
-  if (!Array.isArray(data)) throw new Error(`Binance ticker hatası: ${JSON.stringify(data)}`);
+  const text = await res.text();
+  console.log('Binance status:', res.status, '| İlk 300 karakter:', text.substring(0, 300));
+  const data = JSON.parse(text);
+  if (!Array.isArray(data)) throw new Error(`Binance engelledi: ${text.substring(0, 200)}`);
   return data.filter(t => t.symbol.endsWith('USDT'));
 }
 
