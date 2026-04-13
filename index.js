@@ -120,17 +120,25 @@ async function getUpdates(offset) {
 // ─── Binance API ─────────────────────────────────────────────────────────────
 
 async function fetchBinanceTickers() {
-  const res  = await fetch('https://api.binance.com/api/v3/ticker/24hr');
+  const res  = await fetch('https://api.binance.com/api/v3/ticker/24hr', {
+    headers: { 'User-Agent': 'Mozilla/5.0' },
+  });
   const data = await res.json();
+  if (!Array.isArray(data)) throw new Error(`Binance ticker hatası: ${JSON.stringify(data)}`);
   return data.filter(t => t.symbol.endsWith('USDT'));
 }
 
 async function fetchExchangeInfo() {
-  const res  = await fetch('https://api.binance.com/api/v3/exchangeInfo');
-  const data = await res.json();
-  const map  = {};
-  for (const s of data.symbols) map[s.symbol] = s.status;
-  return map;
+  try {
+    const res  = await fetch('https://api.binance.com/api/v3/exchangeInfo', {
+      headers: { 'User-Agent': 'Mozilla/5.0' },
+    });
+    const data = await res.json();
+    if (!Array.isArray(data.symbols)) return null;
+    const map = {};
+    for (const s of data.symbols) map[s.symbol] = s.status;
+    return map;
+  } catch { return null; }
 }
 
 async function fetchMonitoringList() {
@@ -188,10 +196,10 @@ async function buildSymbolList() {
   ]);
   const filtered = tickers.filter(t => {
     const base = t.symbol.replace('USDT', '');
-    if (STABLECOINS.has(base))                         return false;
-    if (statusMap[t.symbol] !== 'TRADING')             return false;
-    if (monitoring.has(t.symbol))                      return false;
-    if (parseFloat(t.quoteVolume) < MIN_24H_VOL_USDT) return false;
+    if (STABLECOINS.has(base))                                       return false;
+    if (statusMap && statusMap[t.symbol] !== 'TRADING')              return false;
+    if (monitoring.has(t.symbol))                                    return false;
+    if (parseFloat(t.quoteVolume) < MIN_24H_VOL_USDT)               return false;
     return true;
   });
   filtered.sort((a, b) => parseFloat(b.quoteVolume) - parseFloat(a.quoteVolume));
